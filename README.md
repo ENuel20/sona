@@ -159,17 +159,17 @@ Sona: "Staking is a way to earn rewards by locking up your tokens. Here's a simp
 
 ## Future Roadmap
 
-1. **Q2 2024**
+1. **Q2 2025**
    - Multi-token support
    - Advanced price alerts
    - Basic DeFi operations
 
-2. **Q3 2024**
+2. **Q3 2025**
    - Cross-platform DeFi integration
    - Advanced portfolio analytics
    - Mobile app release
 
-3. **Q4 2024**
+3. **Q4 2025**
    - AI-powered trading strategies
    - Tax reporting integration
    - Social features
