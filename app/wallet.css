@@ -1,0 +1,46 @@
+.wallet-adapter-button {
+  background-color: transparent !important;
+  border: none !important;
+  color: #d4d4d4 !important;
+  padding: 8px 16px !important;
+  border-radius: 9999px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: background-color 0.2s !important;
+}
+
+.wallet-adapter-button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.wallet-adapter-button-trigger {
+  background-color: transparent !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  background-color: #262626 !important;
+}
+
+.wallet-adapter-modal-button-close {
+  background-color: #404040 !important;
+}
+
+.wallet-adapter-modal-title {
+  color: white !important;
+}
+
+.wallet-adapter-modal-content {
+  color: #d4d4d4 !important;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button {
+  background-color: #404040 !important;
+}
+
+.wallet-adapter-dropdown {
+  display: flex;
+} 
