@@ -12,6 +12,7 @@ import { clusterApiUrl } from "@solana/web3.js";
 import "./globals.css";
 import "./wallet.css";
 import WalletContextProvider from "@/contexts/WalletContextProvider";
+import { ChatProvider } from "@/contexts/ChatContext";
 import { metadata } from "./metadata";
 
 // Import Wallet Adapter UI styles
@@ -36,7 +37,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <ConnectionProvider endpoint={endpoint}>
             <WalletProvider wallets={wallets} autoConnect={false}>
               <WalletModalProvider>
-                {children}
+                <ChatProvider>
+                  {children}
+                </ChatProvider>
               </WalletModalProvider>
             </WalletProvider>
           </ConnectionProvider>
