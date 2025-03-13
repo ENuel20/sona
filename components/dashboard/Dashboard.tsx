@@ -1,8 +1,63 @@
 "use client";
 
-import { useWallet } from "@solana/wallet-adapter-react";
 import { useEffect, useState } from "react";
-import { Loader2, TrendingUp, TrendingDown, Activity } from "lucide-react";
+import { BarChart3, TrendingUp, TrendingDown, Info } from "lucide-react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Filler,
+  Legend
+} from 'chart.js';
+import dynamic from "next/dynamic";
+import { useWallet } from "@solana/wallet-adapter-react";
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Filler,
+  Legend
+);
+
+// Dynamically import Chart.js to avoid SSR issues
+const Chart = dynamic(() => import("react-chartjs-2").then(mod => mod.Line), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-[400px]">
+      <div className="animate-pulse text-neutral-400">Loading chart...</div>
+    </div>
+  ),
+});
+
+interface PriceData {
+  timestamp: number;
+  price: number;
+}
+
+interface TokenInsight {
+  symbol: string;
+  price: number;
+  change24h: number;
+  volume24h: number;
+  marketCap: number;
+  insights: string[];
+}
+
+interface UserStats {
+  totalBalance: number;
+  totalStaked: number;
+  totalRewards: number;
+  portfolioChange24h: number;
+}
 
 interface TokenBalance {
   symbol: string;
@@ -12,217 +67,300 @@ interface TokenBalance {
   change24h: number;
 }
 
-interface PortfolioMetrics {
-  dailyPnL: number;
-  dailyPnLPercentage: number;
-  weeklyPnL: number;
-  weeklyPnLPercentage: number;
-  monthlyPnL: number;
-  monthlyPnLPercentage: number;
+interface StakingPosition {
+  token: string;
+  amount: number;
+  apy: number;
+  rewards: number;
+  duration: string;
 }
 
 export function Dashboard() {
   const { publicKey } = useWallet();
+  const [selectedToken, setSelectedToken] = useState("SOL");
+  const [priceData, setPriceData] = useState<PriceData[]>([]);
+  const [insights, setInsights] = useState<TokenInsight | null>(null);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
+  const [stakingPositions, setStakingPositions] = useState<StakingPosition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([
-    {
-      symbol: "SOL",
-      balance: 0,
-      price: 0,
-      value: 0,
-      change24h: 0,
-    },
-    {
-      symbol: "USDC",
-      balance: 0,
-      price: 1,
-      value: 0,
-      change24h: 0,
-    }
-  ]);
-  
-  const [metrics, setMetrics] = useState<PortfolioMetrics>({
-    dailyPnL: 25.50,
-    dailyPnLPercentage: 2.5,
-    weeklyPnL: 150.75,
-    weeklyPnLPercentage: 15.2,
-    monthlyPnL: 450.25,
-    monthlyPnLPercentage: 45.8
-  });
+
+  const tokens = ["SOL", "BTC", "ETH", "USDC"];
 
   useEffect(() => {
-    // Fetch token balances and prices here
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // TODO: Implement actual balance and price fetching
-        // For now using placeholder data
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        if (publicKey) {
-          setTokenBalances([
-            {
-              symbol: "SOL",
-              balance: 1.5,
-              price: 150.20,
-              value: 225.30,
-              change24h: 2.5,
-            },
-            {
-              symbol: "USDC",
-              balance: 100,
-              price: 1,
-              value: 100,
-              change24h: 0,
-            }
-          ]);
-        }
-      } catch (error) {
-        console.error("Error fetching token data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    fetchTokenData(selectedToken);
+  }, [selectedToken]);
 
-    fetchData();
+  const fetchTokenData = async (token: string) => {
+    setIsLoading(true);
+    try {
+      // TODO: Replace with actual API calls
+      // Simulated data for now
+      const mockPriceData = generateMockPriceData();
+      const mockInsights = generateMockInsights(token);
+      
+      setPriceData(mockPriceData);
+      setInsights(mockInsights);
+    } catch (error) {
+      console.error("Error fetching token data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const chartData = {
+    labels: priceData.map(d => new Date(d.timestamp).toLocaleTimeString()),
+    datasets: [
+      {
+        label: `${selectedToken} Price`,
+        data: priceData.map(d => d.price),
+        borderColor: "#3b82f6",
+        backgroundColor: "rgba(59, 130, 246, 0.1)",
+        fill: true,
+        tension: 0.4,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+    scales: {
+      y: {
+        grid: {
+          color: "rgba(255, 255, 255, 0.1)",
+        },
+        ticks: {
+          color: "#9ca3af",
+        },
+      },
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          color: "#9ca3af",
+          maxRotation: 0,
+          maxTicksLimit: 6,
+        },
+      },
+    },
+  };
+
+  // Add new fetch functions for user data
+  const fetchUserData = async () => {
+    if (!publicKey) return;
+    
+    // TODO: Replace with actual API calls
+    setUserStats({
+      totalBalance: 25000,
+      totalStaked: 10000,
+      totalRewards: 500,
+      portfolioChange24h: 2.5
+    });
+
+    setTokenBalances([
+      { symbol: "SOL", balance: 100, price: 150, value: 15000, change24h: 2.5 },
+      { symbol: "BTC", balance: 0.5, price: 50000, value: 25000, change24h: -1.2 },
+      { symbol: "ETH", balance: 2, price: 3000, value: 6000, change24h: 1.8 },
+    ]);
+
+    setStakingPositions([
+      { token: "SOL", amount: 50, apy: 5.5, rewards: 0.25, duration: "90 days" },
+      { token: "ETH", amount: 1, apy: 4.2, rewards: 0.04, duration: "30 days" },
+    ]);
+  };
+
+  useEffect(() => {
+    fetchUserData();
   }, [publicKey]);
-
-  if (!publicKey) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-neutral-400">
-        <p>Connect your wallet to view your dashboard</p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-6 h-6 text-neutral-400 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 space-y-6">
-      {/* Total Value */}
-      <div className="bg-neutral-800/50 rounded-xl p-4">
-        <div className="text-sm text-neutral-400">Total Value</div>
-        <div className="text-2xl font-medium mt-1">
-          ${tokenBalances.reduce((acc, token) => acc + token.value, 0).toFixed(2)}
-        </div>
-      </div>
-
-      {/* Token List */}
-      <div className="space-y-3">
-        {tokenBalances.map((token) => (
-          <div
-            key={token.symbol}
-            className="bg-neutral-800/50 rounded-xl p-4 flex items-center justify-between"
-          >
-            <div>
-              <div className="flex items-center gap-2">
-                <img
-                  src={`/icons/${token.symbol.toLowerCase()}.png`}
-                  alt={token.symbol}
-                  className="w-6 h-6"
-                />
-                <span className="font-medium">{token.symbol}</span>
-              </div>
-              <div className="text-sm text-neutral-400 mt-1">
-                {token.balance.toFixed(2)} {token.symbol}
-              </div>
-            </div>
-            <div className="text-right">
-              <div>${token.value.toFixed(2)}</div>
-              <div className={`text-sm ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {token.change24h >= 0 ? '+' : ''}{token.change24h}%
-              </div>
-            </div>
+      {/* User Stats Overview */}
+      {userStats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-neutral-900 rounded-lg p-4 border border-neutral-800">
+            <h3 className="text-sm text-neutral-400 mb-2">Total Balance</h3>
+            <p className="text-2xl font-semibold">${userStats.totalBalance.toLocaleString()}</p>
           </div>
+          <div className="bg-neutral-900 rounded-lg p-4 border border-neutral-800">
+            <h3 className="text-sm text-neutral-400 mb-2">Total Staked</h3>
+            <p className="text-2xl font-semibold">${userStats.totalStaked.toLocaleString()}</p>
+          </div>
+          <div className="bg-neutral-900 rounded-lg p-4 border border-neutral-800">
+            <h3 className="text-sm text-neutral-400 mb-2">Total Rewards</h3>
+            <p className="text-2xl font-semibold">${userStats.totalRewards.toLocaleString()}</p>
+          </div>
+          <div className="bg-neutral-900 rounded-lg p-4 border border-neutral-800">
+            <h3 className="text-sm text-neutral-400 mb-2">24h Change</h3>
+            <p className={`text-2xl font-semibold ${userStats.portfolioChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {userStats.portfolioChange24h >= 0 ? '+' : ''}{userStats.portfolioChange24h}%
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Token Selection and Chart */}
+      <div className="flex gap-2">
+        {tokens.map(token => (
+          <button
+            key={token}
+            onClick={() => setSelectedToken(token)}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              selectedToken === token
+                ? "bg-blue-600 text-white"
+                : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+            }`}
+          >
+            {token}
+          </button>
         ))}
       </div>
 
-      {/* Staking Section */}
-      <div className="bg-neutral-800/50 rounded-xl p-4">
-        <div className="text-sm text-neutral-400">Staking Rewards</div>
-        <div className="mt-3 flex items-center justify-between">
-          <div>
-            <div className="text-sm text-neutral-400">Available</div>
-            <div className="font-medium mt-1">0.00 SOL</div>
-          </div>
-          <button className="px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-sm">
-            Claim
-          </button>
+      {/* Price Chart */}
+      <div className="bg-neutral-900 rounded-lg p-4 border border-neutral-800">
+        <div className="h-[400px]">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-pulse">Loading chart...</div>
+            </div>
+          ) : (
+            <Chart data={chartData} options={chartOptions} />
+          )}
         </div>
       </div>
 
-      {/* Portfolio Metrics */}
-      <div className="bg-neutral-800/50 rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Activity className="w-4 h-4 text-neutral-400" />
-          <span className="text-sm text-neutral-400">Portfolio Metrics</span>
-        </div>
-        
-        <div className="grid grid-cols-3 gap-4">
-          {/* Daily P&L */}
-          <div className="space-y-1">
-            <div className="text-sm text-neutral-400">24h</div>
-            <div className="font-medium">
-              ${Math.abs(metrics.dailyPnL).toFixed(2)}
+      {/* Token Balances */}
+      <div className="bg-neutral-900 rounded-lg p-4 border border-neutral-800">
+        <h3 className="text-lg font-medium mb-4">Your Token Balances</h3>
+        <div className="space-y-4">
+          {tokenBalances.map(token => (
+            <div key={token.symbol} className="flex items-center justify-between p-2 hover:bg-neutral-800 rounded-lg transition-colors">
+              <div>
+                <h4 className="font-medium">{token.symbol}</h4>
+                <p className="text-sm text-neutral-400">{token.balance.toLocaleString()} tokens</p>
+              </div>
+              <div className="text-right">
+                <p className="font-medium">${token.value.toLocaleString()}</p>
+                <p className={`text-sm ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {token.change24h >= 0 ? '+' : ''}{token.change24h}%
+                </p>
+              </div>
             </div>
-            <div className={`text-sm flex items-center gap-1 ${
-              metrics.dailyPnLPercentage >= 0 ? 'text-green-400' : 'text-red-400'
-            }`}>
-              {metrics.dailyPnLPercentage >= 0 ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <TrendingDown className="w-3 h-3" />
-              )}
-              {metrics.dailyPnLPercentage >= 0 ? '+' : ''}
-              {metrics.dailyPnLPercentage}%
-            </div>
-          </div>
-
-          {/* Weekly P&L */}
-          <div className="space-y-1">
-            <div className="text-sm text-neutral-400">7d</div>
-            <div className="font-medium">
-              ${Math.abs(metrics.weeklyPnL).toFixed(2)}
-            </div>
-            <div className={`text-sm flex items-center gap-1 ${
-              metrics.weeklyPnLPercentage >= 0 ? 'text-green-400' : 'text-red-400'
-            }`}>
-              {metrics.weeklyPnLPercentage >= 0 ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <TrendingDown className="w-3 h-3" />
-              )}
-              {metrics.weeklyPnLPercentage >= 0 ? '+' : ''}
-              {metrics.weeklyPnLPercentage}%
-            </div>
-          </div>
-
-          {/* Monthly P&L */}
-          <div className="space-y-1">
-            <div className="text-sm text-neutral-400">30d</div>
-            <div className="font-medium">
-              ${Math.abs(metrics.monthlyPnL).toFixed(2)}
-            </div>
-            <div className={`text-sm flex items-center gap-1 ${
-              metrics.monthlyPnLPercentage >= 0 ? 'text-green-400' : 'text-red-400'
-            }`}>
-              {metrics.monthlyPnLPercentage >= 0 ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <TrendingDown className="w-3 h-3" />
-              )}
-              {metrics.monthlyPnLPercentage >= 0 ? '+' : ''}
-              {metrics.monthlyPnLPercentage}%
-            </div>
-          </div>
+          ))}
         </div>
       </div>
+
+      {/* Staking Positions */}
+      <div className="bg-neutral-900 rounded-lg p-4 border border-neutral-800">
+        <h3 className="text-lg font-medium mb-4">Your Staking Positions</h3>
+        <div className="space-y-4">
+          {stakingPositions.map((position, index) => (
+            <div key={index} className="p-4 bg-neutral-800/50 rounded-lg">
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="font-medium">{position.token}</h4>
+                <span className="text-sm text-green-400">{position.apy}% APY</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-neutral-400">Amount Staked</p>
+                  <p className="font-medium">{position.amount} {position.token}</p>
+                </div>
+                <div>
+                  <p className="text-neutral-400">Rewards Earned</p>
+                  <p className="font-medium">{position.rewards} {position.token}</p>
+                </div>
+                <div>
+                  <p className="text-neutral-400">Duration</p>
+                  <p className="font-medium">{position.duration}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Market Insights */}
+      {insights && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-neutral-900 rounded-lg p-4 border border-neutral-800">
+            <h3 className="text-lg font-medium mb-4">Market Overview</h3>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-400">Price</span>
+                <span className="font-medium">${insights.price.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-400">24h Change</span>
+                <span className={`font-medium flex items-center gap-1 ${
+                  insights.change24h >= 0 ? "text-green-400" : "text-red-400"
+                }`}>
+                  {insights.change24h >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                  {insights.change24h}%
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-400">24h Volume</span>
+                <span className="font-medium">${insights.volume24h.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-400">Market Cap</span>
+                <span className="font-medium">${insights.marketCap.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-neutral-900 rounded-lg p-4 border border-neutral-800">
+            <h3 className="text-lg font-medium mb-4">Market Insights</h3>
+            <div className="space-y-2">
+              {insights.insights.map((insight, index) => (
+                <div key={index} className="flex items-start gap-2">
+                  <Info className="w-4 h-4 text-blue-400 mt-1 flex-shrink-0" />
+                  <p className="text-sm text-neutral-300">{insight}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+// Helper functions for mock data
+function generateMockPriceData(): PriceData[] {
+  const data: PriceData[] = [];
+  const now = Date.now();
+  const basePrice = 100;
+  
+  for (let i = 0; i < 24; i++) {
+    data.push({
+      timestamp: now - (23 - i) * 3600000,
+      price: basePrice + Math.random() * 20 - 10,
+    });
+  }
+  
+  return data;
+}
+
+function generateMockInsights(token: string): TokenInsight {
+  return {
+    symbol: token,
+    price: 100 + Math.random() * 50,
+    change24h: Math.round((Math.random() * 10 - 5) * 100) / 100,
+    volume24h: Math.round(Math.random() * 1000000),
+    marketCap: Math.round(Math.random() * 1000000000),
+    insights: [
+      "Strong buying pressure in the last 24 hours",
+      "Technical indicators suggest a bullish trend",
+      "Increased social media mentions",
+      "Major protocol upgrade expected next week",
+    ],
+  };
 } 

@@ -1,69 +1,119 @@
 "use client";
 
-import { Textarea } from "@/components/ui/textarea";
-import { ArrowUp, Link, RefreshCw, Paperclip } from "lucide-react";
-import { useRef, useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { Send, Mic, Upload, Image } from "lucide-react";
 
 interface ChatInputProps {
   onSubmit: (message: string) => void;
-  isLoading?: boolean;
+  isLoading: boolean;
+  onVoiceInput?: () => void;
+  onFileUpload?: () => void;
+  onImageUpload?: () => void;
 }
 
-export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
-  const [input, setInput] = useState("");
+export function ChatInput({ 
+  onSubmit, 
+  isLoading,
+  onVoiceInput,
+  onFileUpload,
+  onImageUpload
+}: ChatInputProps) {
+  const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleSubmit = () => {
-    if (input.trim() && !isLoading) {
-      onSubmit(input.trim());
-      setInput("");
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [message]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (message.trim() && !isLoading) {
+      onSubmit(message.trim());
+      setMessage("");
+      // Reset textarea height
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
     }
   };
 
   return (
-    <div className="relative">
-      <div className="bg-neutral-800/80 rounded-2xl overflow-hidden">
-        <Textarea
+    <form onSubmit={handleSubmit} className="relative">
+      <div className="flex items-end bg-neutral-800 rounded-xl p-2 border border-neutral-700">
+        <div className="flex space-x-2 px-2">
+          {onVoiceInput && (
+            <button
+              type="button"
+              onClick={onVoiceInput}
+              className="text-neutral-400 hover:text-white transition-colors"
+              disabled={isLoading}
+              aria-label="Voice input"
+            >
+              <Mic className="w-5 h-5" />
+            </button>
+          )}
+          
+          {onFileUpload && (
+            <button
+              type="button"
+              onClick={onFileUpload}
+              className="text-neutral-400 hover:text-white transition-colors"
+              disabled={isLoading}
+              aria-label="Upload file"
+            >
+              <Upload className="w-5 h-5" />
+            </button>
+          )}
+          
+          {onImageUpload && (
+            <button
+              type="button"
+              onClick={onImageUpload}
+              className="text-neutral-400 hover:text-white transition-colors"
+              disabled={isLoading}
+              aria-label="Upload image"
+            >
+              <Image className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+        
+        <textarea
           ref={textareaRef}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Type a message..."
+          className="flex-1 bg-transparent border-0 focus:ring-0 resize-none max-h-32 py-2 px-2 text-white placeholder-neutral-500"
+          disabled={isLoading}
           rows={1}
-          placeholder="Ask anything"
-          className="min-h-[60px] w-full resize-none bg-transparent border-0 focus-visible:ring-0 text-base py-4 px-4 text-neutral-400 placeholder:text-neutral-500"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit();
-            }
-          }}
+          aria-label="Message input"
         />
         
-        <div className="flex items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-6">
-            <button className="flex items-center gap-2 text-sm text-neutral-400 hover:text-neutral-300">
-              <RefreshCw className="w-4 h-4" />
-              Swap
-            </button>
-            <button className="flex items-center gap-2 text-sm text-neutral-400 hover:text-neutral-300">
-              <Link className="w-4 h-4" />
-              Stake
-            </button>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <button className="p-2 text-neutral-400 hover:text-neutral-300 hover:bg-neutral-700/50 rounded-lg">
-              <Paperclip className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={isLoading || !input.trim()}
-              className="p-2 rounded-lg bg-neutral-700 hover:bg-neutral-600 disabled:opacity-50 disabled:hover:bg-neutral-700 text-neutral-400"
-            >
-              <ArrowUp className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+        <button
+          type="submit"
+          className={`p-2 rounded-lg ${
+            message.trim() && !isLoading
+              ? "bg-blue-600 hover:bg-blue-700 text-white"
+              : "bg-neutral-700 text-neutral-400 cursor-not-allowed"
+          } transition-colors`}
+          disabled={!message.trim() || isLoading}
+          aria-label="Send message"
+        >
+          <Send className="w-5 h-5" />
+        </button>
       </div>
-    </div>
+    </form>
   );
 }
